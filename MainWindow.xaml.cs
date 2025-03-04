@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using NBRB_WPF_App.Models;
+using System;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -9,15 +11,17 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace NBRB_WPF_App;
-
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
+namespace NBRB_WPF_App
 {
-    public MainWindow()
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
+        public MainWindow()
+        {
+            InitializeComponent();
+            DataContext = new CurrencyViewModel();
+        }
     }
 }
