@@ -1,4 +1,5 @@
 ﻿using NBRB_WPF_App.Models;
+using NBRB_WPF_App.ViewModels;
 using System;
 using System.Text;
 using System.Windows;

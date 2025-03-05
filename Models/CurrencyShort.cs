@@ -8,6 +8,14 @@ namespace NBRB_WPF_App.Models
 {
     class CurrencyShort
     {
+        public CurrencyShort(DateTime date, string abbreviation, string name, decimal? officialRate)
+        {
+            Date = date;
+            Abbreviation = abbreviation;
+            Name = name;
+            OfficialRate = officialRate;
+        }
+
         public DateTime Date { get; set; }
         public string Abbreviation { get; set; }
         public string Name { get; set; }

@@ -12,128 +12,164 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-public class CurrencyViewModel : INotifyPropertyChanged
+namespace NBRB_WPF_App.ViewModels
 {
-    private DateTime _startDate;
-    public DateTime StartDate
+    public class CurrencyViewModel : INotifyPropertyChanged
     {
-        get => _startDate;
-        set
+        private DateTime _startDate;
+        public DateTime StartDate
         {
-            _startDate = value;
-            OnPropertyChanged(nameof(StartDate));
-        }
-    }
-
-    private DateTime _endDate;
-    public DateTime EndDate
-    {
-        get => _endDate;
-        set
-        {
-            _endDate = value;
-            OnPropertyChanged(nameof(EndDate));
-        }
-    }
-
-    private Currency _selectedCurrency;
-    public Currency SelectedCurrency
-    {
-        get => _selectedCurrency;
-        set
-        {
-            _selectedCurrency = value;
-            OnPropertyChanged(nameof(SelectedCurrency));
-        }
-    }
-
-    private ObservableCollection<CurrencyShort> _currencyRates;
-    private ObservableCollection<CurrencyShort> CurrencyRates
-    {
-        get => _currencyRates;
-        set
-        {
-            _currencyRates = value;
-            OnPropertyChanged(nameof(CurrencyRates));
-        }
-    }
-
-    public CurrencyViewModel()
-    {
-        StartDate = DateTime.Today.AddDays(-7);
-        EndDate = DateTime.Today;
-
-        CurrencyRates = new ObservableCollection<CurrencyShort>();
-        LoadFromAPICommand = new RelayCommand(async (a) => await LoadFromAPI());
-    }
-
-    public RelayCommand LoadFromAPICommand { get; }
-
-    private async Task<IEnumerable<CurrencyShort>> LoadFromAPI()
-    {
-        if (StartDate > EndDate ||
-            EndDate > DateTime.Today)
-        {
-            throw new Exception();  // todo
+            get => _startDate;
+            set
+            {
+                _startDate = value;
+                OnPropertyChanged(nameof(StartDate));
+            }
         }
 
-        var ApiService = new ApiService();
-        IEnumerable<Currency> currencies = await ApiService.LoadAllCurrencies();
-        // todo
-        List<Currency> currencies1 = currencies.OrderBy(x => x.Cur_ParentID).ToList();
-        List<RateShort> Rates = null;
-        foreach (var currency in currencies)
+        private DateTime _endDate;
+        public DateTime EndDate
         {
-            IEnumerable<RateShort> rateShort = await ApiService.LoadRateByPeriod(currency, StartDate, EndDate);
-        }
-        IEnumerable<CurrencyShort> currenciesShort = null;
-        return currenciesShort;
-    }
-
-    public class RelayCommand : ICommand
-    {
-        private readonly Action<object> _execute;
-        private readonly Func<object, bool> _canExecute;
-
-        public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
-        {
-            _execute = execute;
-            _canExecute = canExecute;
+            get => _endDate;
+            set
+            {
+                _endDate = value;
+                OnPropertyChanged(nameof(EndDate));
+            }
         }
 
-        public bool CanExecute(object parameter)
+        private Currency _selectedCurrency;
+        public Currency SelectedCurrency
         {
-            return _canExecute == null || _canExecute(parameter);
+            get => _selectedCurrency;
+            set
+            {
+                _selectedCurrency = value;
+                OnPropertyChanged(nameof(SelectedCurrency));
+            }
         }
 
-        public void Execute(object parameter)
+        private ObservableCollection<Rate> _currencyRates;
+        public ObservableCollection<Rate> CurrencyRates
         {
-            _execute(parameter);
+            get => _currencyRates;
+            set
+            {
+                _currencyRates = value;
+                OnPropertyChanged(nameof(CurrencyRates));
+            }
         }
 
-        public event EventHandler CanExecuteChanged
+        public CurrencyViewModel()
         {
-            add { CommandManager.RequerySuggested += value; }
-            remove { CommandManager.RequerySuggested -= value; }
+            StartDate = DateTime.Today.AddDays(-7); // начальные значения дат
+            EndDate = DateTime.Today;
+
+            CurrencyRates = new ObservableCollection<Rate>();
+            LoadFromAPICommand = new RelayCommand(async (a) => await LoadFromAPI());
+            SaveCommand = new RelayCommand(async (a) => await SaveToFile());
         }
-    }
 
-    public void SaveToFile(string filePath)
-    {
-        string json = JsonConvert.SerializeObject(CurrencyRates, Formatting.Indented);
-        File.WriteAllText(filePath, json);
-    }
+        public RelayCommand LoadFromAPICommand { get; }
+        public RelayCommand SaveCommand { get; }
 
-    public void LoadFromFile(string filePath)
-    {
-        string json = File.ReadAllText(filePath);
-        var rates = JsonConvert.DeserializeObject<List<CurrencyShort>>(json);
-        CurrencyRates = new ObservableCollection<CurrencyShort>(rates);
-    }
+        private async Task<IEnumerable<Rate>> LoadFromAPI()
+        {
+            if (StartDate > EndDate ||
+                EndDate > DateTime.Today)
+            {
+                throw new Exception();  // todo
+            }
 
-    public event PropertyChangedEventHandler PropertyChanged;
-    protected void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            // todo описать в readme возможные способы решения задачи в плане оптимизации
+
+            var ApiService = new ApiWorker();
+            //IEnumerable<Currency> currencies = await ApiService.LoadAllCurrencies();    // в любом случае загружаем весь список валют
+            //List<Currency> currencies1 = currencies.OrderBy(x => x.Cur_DateStart).ToList();
+            //List<RateShort> allCurrenciesRatesShort = new List<RateShort>();
+            //List<CurrencyShort> currenciesShort = new List<CurrencyShort>();
+            //foreach (var currency in currencies)
+            //{
+            //    IEnumerable<RateShort> cyrrencyRatesShort = await ApiService.LoadRateByPeriod(currency, StartDate, EndDate);
+            //    allCurrenciesRatesShort.AddRange(cyrrencyRatesShort);
+            //}
+            //foreach (var currencyRateShort in allCurrenciesRatesShort)
+            //{
+            //    Currency currency = currencies.Where(x => x.Cur_ID == currencyRateShort.Cur_ID).First();
+            //    CurrencyShort currencyShort = new CurrencyShort(
+            //        currencyRateShort.Date,
+            //        currency.Cur_Abbreviation,
+            //        currency.Cur_Name,
+            //        currencyRateShort.Cur_OfficialRate);
+            //    currenciesShort.Add(currencyShort);
+            //}
+            List<Rate> ratesByPeriod = new List<Rate>();
+            for (DateTime date = StartDate; date <= EndDate; date = date.AddDays(1))
+            {
+                IEnumerable<Rate> ratesByDate = await ApiService.LoadRatesByDate(date);
+                ratesByPeriod.AddRange(ratesByDate);
+            }
+
+            List<Rate> ratesByPeriod1 = ratesByPeriod.OrderBy(x => x.Cur_ID).ToList();
+
+            foreach (var item in ratesByPeriod1)
+            {
+                CurrencyRates.Add(item);
+            }
+
+            // todo
+            return ratesByPeriod;
+        }
+
+        public class RelayCommand : ICommand
+        {
+            private readonly Action<object> _execute;
+            private readonly Func<object, bool> _canExecute;
+
+            public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
+            {
+                _execute = execute;
+                _canExecute = canExecute;
+            }
+
+            public bool CanExecute(object parameter)
+            {
+                return _canExecute == null || _canExecute(parameter);
+            }
+
+            public void Execute(object parameter)
+            {
+                _execute(parameter);
+            }
+
+            public event EventHandler CanExecuteChanged
+            {
+                add { CommandManager.RequerySuggested += value; }
+                remove { CommandManager.RequerySuggested -= value; }
+            }
+        }
+
+        public async Task SaveToFile()  // todo
+        {
+            string filepath = "C:\\Users\\kkaza\\OneDrive\\Рабочий стол\\nbrb_api_data.txt";
+            string json = JsonConvert.SerializeObject(CurrencyRates, Formatting.Indented);
+            using (StreamWriter writer = new StreamWriter(filepath, false))
+            {
+                await writer.WriteLineAsync(json);
+            }
+        }
+
+        //public void LoadFromFile(string filePath)
+        //{
+        //    string json = File.ReadAllText(filePath);
+        //    var rates = JsonConvert.DeserializeObject<List<CurrencyShort>>(json);
+        //    CurrencyRates = new ObservableCollection<CurrencyShort>(rates);
+        //}
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }
