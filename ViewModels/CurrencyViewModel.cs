@@ -10,6 +10,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace NBRB_WPF_App.ViewModels
@@ -38,16 +40,16 @@ namespace NBRB_WPF_App.ViewModels
             }
         }
 
-        private Currency _selectedCurrency;
-        public Currency SelectedCurrency
-        {
-            get => _selectedCurrency;
-            set
-            {
-                _selectedCurrency = value;
-                OnPropertyChanged(nameof(SelectedCurrency));
-            }
-        }
+        //private Currency _selectedCurrency;
+        //public Currency SelectedCurrency
+        //{
+        //    get => _selectedCurrency;
+        //    set
+        //    {
+        //        _selectedCurrency = value;
+        //        OnPropertyChanged(nameof(SelectedCurrency));
+        //    }
+        //}
 
         private ObservableCollection<Rate> _currencyRates;
         public ObservableCollection<Rate> CurrencyRates
@@ -60,6 +62,20 @@ namespace NBRB_WPF_App.ViewModels
             }
         }
 
+        private Rate _selectedRate;
+        public Rate SelectedRate
+        {
+            get => _selectedRate;
+            set
+            {
+                _selectedRate = value;
+                OnPropertyChanged(nameof(SelectedRate));
+            }
+        }
+
+        private IEnumerable<Rate> currencyRates;
+        const string filepath = "C:\\Users\\kkaza\\OneDrive\\Рабочий стол\\nbrb_api_data.txt";
+
         public CurrencyViewModel()
         {
             StartDate = DateTime.Today.AddDays(-7); // начальные значения дат
@@ -67,42 +83,25 @@ namespace NBRB_WPF_App.ViewModels
 
             CurrencyRates = new ObservableCollection<Rate>();
             LoadFromAPICommand = new RelayCommand(async (a) => await LoadFromAPI());
-            SaveCommand = new RelayCommand(async (a) => await SaveToFile());
+            SaveToFileCommand = new RelayCommand(async (a) => await SaveToFile(false));
+            LoadFromFileCommand = new RelayCommand(async (a) => await LoadFromFile());
         }
 
         public RelayCommand LoadFromAPICommand { get; }
-        public RelayCommand SaveCommand { get; }
+        public RelayCommand SaveToFileCommand { get; }
+        public RelayCommand LoadFromFileCommand { get; }
 
         private async Task<IEnumerable<Rate>> LoadFromAPI()
         {
             if (StartDate > EndDate ||
                 EndDate > DateTime.Today)
             {
-                throw new Exception();  // todo
+                throw new Exception();  // todo (MessageBox.Show)
             }
 
             // todo описать в readme возможные способы решения задачи в плане оптимизации
 
             var ApiService = new ApiWorker();
-            //IEnumerable<Currency> currencies = await ApiService.LoadAllCurrencies();    // в любом случае загружаем весь список валют
-            //List<Currency> currencies1 = currencies.OrderBy(x => x.Cur_DateStart).ToList();
-            //List<RateShort> allCurrenciesRatesShort = new List<RateShort>();
-            //List<CurrencyShort> currenciesShort = new List<CurrencyShort>();
-            //foreach (var currency in currencies)
-            //{
-            //    IEnumerable<RateShort> cyrrencyRatesShort = await ApiService.LoadRateByPeriod(currency, StartDate, EndDate);
-            //    allCurrenciesRatesShort.AddRange(cyrrencyRatesShort);
-            //}
-            //foreach (var currencyRateShort in allCurrenciesRatesShort)
-            //{
-            //    Currency currency = currencies.Where(x => x.Cur_ID == currencyRateShort.Cur_ID).First();
-            //    CurrencyShort currencyShort = new CurrencyShort(
-            //        currencyRateShort.Date,
-            //        currency.Cur_Abbreviation,
-            //        currency.Cur_Name,
-            //        currencyRateShort.Cur_OfficialRate);
-            //    currenciesShort.Add(currencyShort);
-            //}
             List<Rate> ratesByPeriod = new List<Rate>();
             for (DateTime date = StartDate; date <= EndDate; date = date.AddDays(1))
             {
@@ -112,13 +111,58 @@ namespace NBRB_WPF_App.ViewModels
 
             List<Rate> ratesByPeriod1 = ratesByPeriod.OrderBy(x => x.Cur_ID).ToList();
 
-            foreach (var item in ratesByPeriod1)
-            {
-                CurrencyRates.Add(item);
-            }
+            currencyRates = ratesByPeriod1;
+
+            MessageBox.Show("Data from API loaded!");
 
             // todo
-            return ratesByPeriod;
+            return ratesByPeriod1;
+        }
+
+        public async Task SaveToFile(bool isDataChanged)  // todo
+        {
+            string json = string.Empty;
+            if (!isDataChanged)
+            {
+                json = JsonConvert.SerializeObject(currencyRates, Formatting.Indented);
+            }
+            else
+            {
+                json = JsonConvert.SerializeObject(CurrencyRates, Formatting.Indented);
+            }
+            using (StreamWriter writer = new StreamWriter(filepath, false))
+            {
+                await writer.WriteLineAsync(json);
+            }
+
+            MessageBox.Show("Data saved to file!");
+        }
+
+        public async Task LoadFromFile()
+        {
+            if (File.Exists(filepath))
+            {
+                string json = string.Empty;
+                using (StreamReader reader = new StreamReader(filepath))    // todo решить проблему с доступом к потоку
+                {
+                    json = await reader.ReadToEndAsync();
+                }
+                var rates = JsonConvert.DeserializeObject<List<Rate>>(json);
+                CurrencyRates = new ObservableCollection<Rate>(rates);
+            }
+
+            MessageBox.Show("Data loaded from file!");
+        }
+
+        public async Task DataGrid_CellEditEnding()
+        {
+            await SaveToFile(true);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         public class RelayCommand : ICommand
@@ -147,29 +191,6 @@ namespace NBRB_WPF_App.ViewModels
                 add { CommandManager.RequerySuggested += value; }
                 remove { CommandManager.RequerySuggested -= value; }
             }
-        }
-
-        public async Task SaveToFile()  // todo
-        {
-            string filepath = "C:\\Users\\kkaza\\OneDrive\\Рабочий стол\\nbrb_api_data.txt";
-            string json = JsonConvert.SerializeObject(CurrencyRates, Formatting.Indented);
-            using (StreamWriter writer = new StreamWriter(filepath, false))
-            {
-                await writer.WriteLineAsync(json);
-            }
-        }
-
-        //public void LoadFromFile(string filePath)
-        //{
-        //    string json = File.ReadAllText(filePath);
-        //    var rates = JsonConvert.DeserializeObject<List<CurrencyShort>>(json);
-        //    CurrencyRates = new ObservableCollection<CurrencyShort>(rates);
-        //}
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

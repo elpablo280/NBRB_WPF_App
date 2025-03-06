@@ -12,28 +12,34 @@
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="0.2*"></RowDefinition>
         </Grid.RowDefinitions>
+        <DataGrid Grid.Row="0"
+                  ItemsSource="{Binding CurrencyRates}"
+                  SelectedItem="{Binding SelectedRate, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CellEditEnding="DataGrid_CellEditEnding">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}', UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+                <DataGridTextColumn Header="Abbreviation" Binding="{Binding Cur_Abbreviation, UpdateSourceTrigger=PropertyChanged}" />
+                <DataGridTextColumn Header="Name" Binding="{Binding Cur_Name, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+                <DataGridTextColumn Header="Official Rate" Binding="{Binding Cur_OfficialRate, UpdateSourceTrigger=PropertyChanged}" />
+            </DataGrid.Columns>
+        </DataGrid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition></ColumnDefinition>
                 <ColumnDefinition></ColumnDefinition>
                 <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Load" Command="{Binding LoadFromAPICommand}"/>
-            <StackPanel Grid.Column="1">
+            <StackPanel Grid.Column="0">
                 <TextBlock>Enter start and end dates</TextBlock>
                 <DatePicker Name="datePickerStartDate" IsDropDownOpen="False" SelectedDateFormat="Short" SelectedDate="{Binding StartDate, Mode=TwoWay}"/>
                 <DatePicker Name="datePickerEndDate" IsDropDownOpen="False" SelectedDateFormat="Short" SelectedDate="{Binding EndDate, Mode=TwoWay}"/>
             </StackPanel>
-            <Button Grid.Column="2" Content="Save" Command="{Binding SaveCommand}"/>
+            <Button Grid.Column="1" Content="Get data from API" Command="{Binding LoadFromAPICommand}"/>
+            <Button Grid.Column="2" Content="Save to file" Command="{Binding SaveToFileCommand}"/>
+            <Button Grid.Column="3" Content="Load from file" Command="{Binding LoadFromFileCommand}"/>
         </Grid>
-        <!--<DataGrid Grid.Row="0" ItemsSource="{Binding CurrencyRates}" SelectedItem="{Binding SelectedCurrency, Mode=TwoWay}" AutoGenerateColumns="False">-->
-        <DataGrid Grid.Row="0" ItemsSource="{Binding CurrencyRates}" AutoGenerateColumns="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}" />
-                <DataGridTextColumn Header="Abbreviation" Binding="{Binding Cur_Abbreviation}" />
-                <DataGridTextColumn Header="Name" Binding="{Binding Cur_Name}" />
-                <DataGridTextColumn Header="Official Rate" Binding="{Binding Cur_OfficialRate}" />
-            </DataGrid.Columns>
-        </DataGrid>
     </Grid>
 </Window>
