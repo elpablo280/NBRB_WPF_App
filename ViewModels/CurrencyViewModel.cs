@@ -1,6 +1,5 @@
 ﻿using LiveCharts;
 using LiveCharts.Wpf;
-using NBRB_WPF_App;
 using NBRB_WPF_App.Models;
 using Newtonsoft.Json;
 using System;
@@ -9,12 +8,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace NBRB_WPF_App.ViewModels
@@ -65,9 +60,6 @@ namespace NBRB_WPF_App.ViewModels
             }
         }
 
-        private IEnumerable<Rate> currencyRates;
-        const string filepath = "C:\\Users\\kkaza\\OneDrive\\Рабочий стол\\nbrb_api_data.txt";  // todo
-
         private SeriesCollection _seriesCollection;
         public SeriesCollection SeriesCollection
         {
@@ -89,7 +81,9 @@ namespace NBRB_WPF_App.ViewModels
                 OnPropertyChanged(nameof(Labels));
             }
         }
-        public Func<double, string> YFormatter { get; set; }    // todo убрать
+
+        private IEnumerable<Rate> currencyRates;
+        private readonly string filepath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "nbrb_api_data.txt");
 
         public CurrencyViewModel()
         {
@@ -118,13 +112,11 @@ namespace NBRB_WPF_App.ViewModels
                 return null;
             }
 
-            // todo описать в readme возможные способы решения задачи в плане оптимизации
-
-            var ApiService = new ApiWorker();
+            var api = new ApiWorker();
             List<Rate> ratesByPeriod = new List<Rate>();
             for (DateTime date = StartDate; date <= EndDate; date = date.AddDays(1))
             {
-                IEnumerable<Rate> ratesByDate = await ApiService.LoadRatesByDate(date);
+                IEnumerable<Rate> ratesByDate = await api.LoadRatesByDate(date);
                 ratesByPeriod.AddRange(ratesByDate);
             }
 
@@ -134,13 +126,12 @@ namespace NBRB_WPF_App.ViewModels
 
             MessageBox.Show("Data from API loaded!");
 
-            // todo
             return ratesByPeriod1;
         }
 
-        public async Task SaveToFileAsync(bool isDataChanged)  // todo
+        public async Task SaveToFileAsync(bool isDataChanged)
         {
-            string json = string.Empty;
+            string json;
             if (!isDataChanged)
             {
                 json = JsonConvert.SerializeObject(currencyRates, Formatting.Indented);
@@ -162,7 +153,7 @@ namespace NBRB_WPF_App.ViewModels
             if (File.Exists(filepath))
             {
                 string json = string.Empty;
-                using (StreamReader reader = new StreamReader(filepath))    // todo решить проблему с доступом к потоку
+                using (StreamReader reader = new StreamReader(filepath))
                 {
                     json = await reader.ReadToEndAsync();
                 }
@@ -177,15 +168,10 @@ namespace NBRB_WPF_App.ViewModels
 
         public async Task UpdateChartDataAsync(IEnumerable<Rate> Rates)
         {
-            // Очистите существующие серии данных
             await Application.Current.Dispatcher.InvokeAsync(() => SeriesCollection.Clear());
-
-            // Группируем данные по валютам
             var groupedRates = Rates.GroupBy(r => r.Cur_Abbreviation);
-
             foreach (var group in groupedRates)
             {
-                // Создаем новую серию для каждой валюты
                 var series = new LineSeries
                 {
                     Title = group.Key,
@@ -193,20 +179,15 @@ namespace NBRB_WPF_App.ViewModels
                     Fill = System.Windows.Media.Brushes.Transparent
                 };
 
-                // Добавляем значения в серию
                 foreach (var rate in group)
                 {
                     series.Values.Add(rate.Cur_OfficialRate);
                 }
 
-                // Добавляем серию в коллекцию серий
                 await Application.Current.Dispatcher.InvokeAsync(() => SeriesCollection.Add(series));
             }
-
-            // Обновляем метки для оси X
             Labels = Rates.Select(r => r.Date.ToString("dd/MM/yyyy")).Distinct().ToArray();
 
-            // Уведомляем интерфейс об изменениях
             OnPropertyChanged(nameof(SeriesCollection));
             OnPropertyChanged(nameof(Labels));
         }

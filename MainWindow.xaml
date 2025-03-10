@@ -32,7 +32,7 @@
                 <lvc:Axis Title="Date" Labels="{Binding Labels}"/>
             </lvc:CartesianChart.AxisX>
             <lvc:CartesianChart.AxisY>
-                <lvc:Axis Title="Official Rate" LabelFormatter="{Binding YFormatter}"/>
+                <lvc:Axis Title="Official Rate"/>
             </lvc:CartesianChart.AxisY>
         </lvc:CartesianChart>
         <Grid Grid.Row="2">

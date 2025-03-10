@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NBRB_WPF_App.Models
 {
@@ -11,7 +7,7 @@ namespace NBRB_WPF_App.Models
     {
         [Key]
         public int Cur_ID { get; set; }
-        public Nullable<int> Cur_ParentID { get; set; }
+        public int Cur_ParentID { get; set; }
         public string Cur_Code { get; set; }
         public string Cur_Abbreviation { get; set; }
         public string Cur_Name { get; set; }
@@ -25,7 +21,7 @@ namespace NBRB_WPF_App.Models
         public string Cur_Name_EngMulti { get; set; }
         public int Cur_Scale { get; set; }
         public int Cur_Periodicity { get; set; }
-        public System.DateTime Cur_DateStart { get; set; }
-        public System.DateTime Cur_DateEnd { get; set; }
+        public DateTime Cur_DateStart { get; set; }
+        public DateTime Cur_DateEnd { get; set; }
     }
 }
